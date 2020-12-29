@@ -1,86 +1,103 @@
-export type Parser<T, U> = (input: T) => ParseOutput<T, U>;
-
-/**
- * T: Input type
- * U: Output type
- * V: Inner parser output type
- */
-export type ParserWrapper<T, U, V> = () => Generator<Parser<T, V>, ParseWrapperOutput<U>, ParseOutput<T, V>>;
-
-
+export type ParserFunction<T, U> = (input: T) => [U, T];
+export type Parser<T, U> = Generator<T | null, U, T | null>;
 export type ParseResult<T, U> = {
-  error: false
+  success: true,
   value: U,
   rest: T,
 };
+export type ParseFail = {
+  success: false,
+  error: ParseError,
+}
+export type ParseOutput<T, U> = ParseResult<T, U> | ParseFail;
 
-export type ParseError = {
-  error: true,
-  message: string,
-};
-
-export type ParseOutput<T, U> = ParseResult<T, U> | ParseError;
-
-export type ParseWrapperResult<U> = {
-  error: false,
-  value: U,
-};
-
-export type ParseWrapperOutput<U> = ParseWrapperResult<U> | ParseError;
-
-export function result<T, U>(r: U, rest: T): ParseOutput<T, U> {
-  return {
-    error: false,
-    value: r,
-    rest,
-  };
+class ParseError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
 }
 
-export function error<T, U>(message: string): ParseOutput<T, U> {
-  return {
-    error: true,
-    message,
-  };
+class UnexpectedEofError extends ParseError {
+  constructor() {
+    super('Unexpected EoF encountered');
+  }
 }
 
-export function parser<T, U, V>(p: ParserWrapper<T, U, V>): Parser<T, U> {
-  return (input: T) => {
-    const iterator = p();
-    let currentParser = iterator.next();
-    let currentInput = input;
-    while (!currentParser.done) {
-      const innerParser = currentParser.value;
-      const output = innerParser(currentInput);
-      if (output.error) {
-        return output;
+class UnexpectedCharacterError extends ParseError {
+  constructor(char: string) {
+    super(`Unexpected character "${char}" encountered`);
+  }
+}
+
+export function parserFunction<T, U>(p: ParserFunction<T, U>) {
+  return function*(): Parser<T, U> {
+    const input = yield null;
+    const [result, rest] = p(input!);
+    yield rest;
+    return result;
+  }
+}
+
+export function parse<T, U>(parser: Parser<T, U>, input: T): ParseOutput<T, U> {
+  try {
+    let remainingInput = input;
+    const p = parser;
+    let state = p.next();
+    while (!state.done) {
+      state = p.next(remainingInput);
+      if (!state.done) {
+        remainingInput = state.value!;
+        state = p.next();
       }
-      currentInput = output.rest;
-      currentParser = iterator.next(output);
     }
-
-    const finalOutput = currentParser.value;
-    if (finalOutput.error) {
-      return finalOutput;
-    } 
-
-    return result(finalOutput.value, currentInput);
+    return {
+      success: true,
+      value: state.value,
+      rest: remainingInput,
+    };
+  } catch (error) {
+    if (!(error instanceof ParseError)) {
+      throw error;
+    }
+    return {
+      success: false,
+      error,
+    };
   }
 }
 
-export const character = (input: string) => {
+export const union = <T, U>(firstParser: Parser<T, U>, ...parsers: Parser<T, U>[]) => parserFunction((input: T) => {
+  let error: ParseError | undefined = undefined;
+  for (let p of [firstParser, ...parsers]) {
+    const result = parse(p, input);
+    if (result.success) {
+      return [result.value, result.rest];
+    }
+    error = result.error;
+  }
+  throw error!;
+});
+
+export const character = parserFunction((input: string) => {
   if (input[0] !== '') {
-    return result(input[0], input.slice(1));
+    return [input[0], input.slice(1)];
   }
-  return error<string, string>('unexpected eof');
+  throw new UnexpectedEofError();
+});
+
+export const char = function*(c: string) {
+  const aCharacter = yield* character();
+  if (aCharacter === c) {
+    return aCharacter;
+  }
+  throw new UnexpectedCharacterError(aCharacter);
 }
 
-export const char = (c: string) => {
-  function* charParser() {
-    const aCharacter: string = yield character;
-    if (aCharacter === c) {
-      return <ParseWrapperOutput<string>>{ error: false, value: aCharacter };
-    }
-    return <ParseWrapperOutput<string>>{ error: true, message: 'unexpected char '};
+export const digit = function*() {
+  const c = yield* character();
+  const n = parseInt(c, 10);
+  if (isNaN(n)) {
+    throw new UnexpectedCharacterError(c);
   }
-  return parser<string, string, string>(charParser)
-};
+  return n;
+}
