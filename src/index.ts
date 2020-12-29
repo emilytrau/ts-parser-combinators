@@ -1,3 +1,5 @@
+export * from './parsers';
+
 export type ParserFunction<T, U> = (input: T) => [U, T];
 export type Parser<T, U> = () => Generator<T | null, U, T | null>;
 export type ParseResult<T, U> = {
@@ -60,14 +62,3 @@ export function parse<T, U>(parser: Parser<T, U>, input: T): ParseOutput<T, U> {
   }
 }
 
-export const union = <T, U>(firstParser: Parser<T, U>, ...parsers: Parser<T, U>[]) => parserFunction((input: T) => {
-  let error: ParseError | undefined = undefined;
-  for (let p of [firstParser, ...parsers]) {
-    const result = parse(p, input);
-    if (result.success) {
-      return [result.value, result.rest];
-    }
-    error = result.error;
-  }
-  throw error!;
-});
