@@ -1,6 +1,7 @@
 import {
   parserFunction,
   ParseError,
+  Parser,
   UnexpectedEofError,
 } from '.';
 
@@ -24,7 +25,7 @@ export const character = parserFunction((input: string) => {
   return [input[0], input.slice(1)];
 });
 
-export const char = function*(c: string) {
+export const char = (c: string): Parser<string, string> => function*() {
   const aCharacter = yield* character();
   if (aCharacter === c) {
     return aCharacter;
@@ -32,7 +33,7 @@ export const char = function*(c: string) {
   throw new UnexpectedCharacterError(aCharacter, `"${c}"`);
 }
 
-export const digit = function*() {
+export const digit: Parser<string, number> = function*() {
   const c = yield* character();
   const n = parseInt(c, 10);
   if (isNaN(n)) {
