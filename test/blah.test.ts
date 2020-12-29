@@ -1,7 +1,14 @@
-import { sum } from '../src';
+import { parser, character } from '../src';
+
+
+const aaParser = parser(function*() {
+  yield char('a');
+  yield char('a');
+  return 'aa';
+});
 
 describe('blah', () => {
   it('works', () => {
-    expect(sum(1, 1)).toEqual(2);
+    expect(character('aaaa')).toEqual({ error: false, value: 'a', rest: 'aaa' });
   });
 });
