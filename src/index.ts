@@ -11,21 +11,15 @@ export type ParseFail = {
 }
 export type ParseOutput<T, U> = ParseResult<T, U> | ParseFail;
 
-class ParseError extends Error {
+export class ParseError extends Error {
   constructor(message: string) {
     super(message);
   }
 }
 
-class UnexpectedEofError extends ParseError {
+export class UnexpectedEofError extends ParseError {
   constructor() {
     super('Unexpected EoF encountered');
-  }
-}
-
-class UnexpectedCharacterError extends ParseError {
-  constructor(char: string) {
-    super(`Unexpected character "${char}" encountered`);
   }
 }
 
@@ -77,27 +71,3 @@ export const union = <T, U>(firstParser: Parser<T, U>, ...parsers: Parser<T, U>[
   }
   throw error!;
 });
-
-export const character = parserFunction((input: string) => {
-  if (input[0] !== '') {
-    return [input[0], input.slice(1)];
-  }
-  throw new UnexpectedEofError();
-});
-
-export const char = function*(c: string) {
-  const aCharacter = yield* character();
-  if (aCharacter === c) {
-    return aCharacter;
-  }
-  throw new UnexpectedCharacterError(aCharacter);
-}
-
-export const digit = function*() {
-  const c = yield* character();
-  const n = parseInt(c, 10);
-  if (isNaN(n)) {
-    throw new UnexpectedCharacterError(c);
-  }
-  return n;
-}
