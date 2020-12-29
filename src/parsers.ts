@@ -1,13 +1,13 @@
 import {
   parse,
-  parserFunction,
+  parser,
   ParseError,
   Parser,
 } from '.';
 
-export const always = <T, U>(value: U) => parserFunction<T, U>((input: T) => [value, input]);
+export const always = <T, U>(value: U) => parser<T, U>((input: T) => [value, input]);
 
-export const union = <T, U>(firstParser: Parser<T, U>, ...parsers: Parser<T, U>[]) => parserFunction((input: T) => {
+export const union = <T, U>(firstParser: Parser<T, U>, ...parsers: Parser<T, U>[]) => parser((input: T) => {
   let error: ParseError | undefined = undefined;
   for (let p of [firstParser, ...parsers]) {
     const result = parse(p, input);

@@ -1,5 +1,5 @@
 import {
-  parserFunction,
+  parser,
   ParseError,
   Parser,
   UnexpectedEofError,
@@ -11,14 +11,14 @@ export class UnexpectedCharacterError extends ParseError {
   }
 }
 
-export const eof = parserFunction((input: string) => {
+export const eof = parser((input: string) => {
   if (input !== '') {
     throw new UnexpectedCharacterError(input[0], '<EOF>');
   }
   return ['', ''];
 })
 
-export const character = parserFunction((input: string) => {
+export const character = parser((input: string) => {
   if (input[0] === '') {
     throw new UnexpectedEofError();
   }

@@ -25,7 +25,7 @@ export class UnexpectedEofError extends ParseError {
   }
 }
 
-export function parserFunction<T, U>(p: ParserFunction<T, U>): Parser<T, U> {
+export function parser<T, U>(p: ParserFunction<T, U>): Parser<T, U> {
   return function*() {
     const input = yield null;
     const [result, rest] = p(input!);
