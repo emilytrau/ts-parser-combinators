@@ -1,5 +1,5 @@
 export type ParserFunction<T, U> = (input: T) => [U, T];
-export type Parser<T, U> = Generator<T | null, U, T | null>;
+export type Parser<T, U> = () => Generator<T | null, U, T | null>;
 export type ParseResult<T, U> = {
   success: true,
   value: U,
@@ -23,8 +23,8 @@ export class UnexpectedEofError extends ParseError {
   }
 }
 
-export function parserFunction<T, U>(p: ParserFunction<T, U>) {
-  return function*(): Parser<T, U> {
+export function parserFunction<T, U>(p: ParserFunction<T, U>): Parser<T, U> {
+  return function*() {
     const input = yield null;
     const [result, rest] = p(input!);
     yield rest;
@@ -35,7 +35,7 @@ export function parserFunction<T, U>(p: ParserFunction<T, U>) {
 export function parse<T, U>(parser: Parser<T, U>, input: T): ParseOutput<T, U> {
   try {
     let remainingInput = input;
-    const p = parser;
+    const p = parser();
     let state = p.next();
     while (!state.done) {
       state = p.next(remainingInput);
