@@ -19,6 +19,12 @@ export class ParseError extends Error {
   }
 }
 
+export function assertIsParseError(e: Error): asserts e is ParseError {
+  if (!(e instanceof ParseError)) {
+    throw e;
+  }
+}
+
 export const fail = (message: string) => new ParseError(message);
 export const unexpectedEof = () => fail('Unexpected EoF encountered');
 
@@ -49,9 +55,7 @@ export function parse<T, U>(parser: Parser<T, U>, input: T): ParseOutput<T, U> {
       rest: remainingInput,
     };
   } catch (error) {
-    if (!(error instanceof ParseError)) {
-      throw error;
-    }
+    assertIsParseError(error);
     return {
       success: false,
       error,

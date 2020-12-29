@@ -1,4 +1,5 @@
 import {
+  assertIsParseError,
   parse,
   parser,
   ParseError,
@@ -25,9 +26,7 @@ export const list = <T, U>(p: Parser<T, U>): Parser<T, U[]> => function*() {
     try {
       results.push(yield* p());
     } catch (e) {
-      if (!(e instanceof ParseError)) {
-        throw e;
-      }
+      assertIsParseError(e);
       break;
     }
   }
