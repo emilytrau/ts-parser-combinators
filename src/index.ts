@@ -19,11 +19,8 @@ export class ParseError extends Error {
   }
 }
 
-export class UnexpectedEofError extends ParseError {
-  constructor() {
-    super('Unexpected EoF encountered');
-  }
-}
+export const fail = (message: string) => new ParseError(message);
+export const unexpectedEof = () => fail('Unexpected EoF encountered');
 
 export function parser<T, U>(p: ParserFunction<T, U>): Parser<T, U> {
   return function*() {
