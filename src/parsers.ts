@@ -1,5 +1,4 @@
 import {
-  assertIsParseError,
   parse,
   parser,
   ParseError,
@@ -8,6 +7,11 @@ import {
 
 export const identity = <T, U>(value: U) => parser<T, U>((input: T) => [value, input]);
 
+export const bind = <T, U, V>(p: Parser<T, U>, m: (x: U) => Parser<T, V>): Parser<T, V> => function*() {
+  const v = yield* p();
+  return yield* m(v)();
+}
+
 export const union = <T, U>(firstParser: Parser<T, U>, ...parsers: Parser<T, U>[]) => parser((input: T) => {
   let error: ParseError | undefined = undefined;
   for (let p of [firstParser, ...parsers]) {
@@ -15,26 +19,37 @@ export const union = <T, U>(firstParser: Parser<T, U>, ...parsers: Parser<T, U>[
     if (result.success) {
       return [result.value, result.rest];
     }
-    error = result.error;
+    if (!error) {
+      error = result.error;
+    }
   }
   throw error!;
 });
 
-export const list = <T, U>(p: Parser<T, U>): Parser<T, U[]> => function*() {
-  const results = [];
-  while (true) {
-    try {
-      results.push(yield* p());
-    } catch (e) {
-      assertIsParseError(e);
-      break;
-    }
-  }
-  return results;
-}
+export const list = <T, U>(p: Parser<T, U>): Parser<T, U[]> => union(list1(p), identity([]));
 
 export const list1 = <T, U>(p: Parser<T, U>): Parser<T, U[]> => function*() {
   const first = yield* p();
   const rest = yield* list(p)();
   return [first, ...rest];
 };
+
+export const sepby1 = <T, U, V>(p: Parser<T, U>, s: Parser<T, V>): Parser<T, U[]> => function*() {
+  const elements = yield* list(function*() {
+    const v = yield* p();
+    yield* s();
+    return v;
+  })();
+  const last = yield* p();
+  return [...elements, last];
+}
+
+export const sepby = <T, U, V>(p: Parser<T, U>, s: Parser<T, V>): Parser<T, U[]> => union(sepby1(p, s), identity([]));
+
+export const repeat = <T, U>(times: number, p: Parser<T, U>): Parser<T, U[]> => function*() {
+  const results = [];
+  for (let i = 0; i < times; i++) {
+    results.push(yield* p());
+  }
+  return results;
+}
