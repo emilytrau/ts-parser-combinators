@@ -1,10 +1,7 @@
 export * from './parsers';
 
 export type ParserFunction<T, U> = (input: T) => [U, T];
-type ParserYield<T> = T | null;
-type ParserReturn<U> = U;
-type ParserResume<T> = T | null;
-export type Parser<T, U> = () => Generator<ParserYield<T>, ParserReturn<U>, ParserResume<T>>;
+export type Parser<T, U> = () => Generator<T | null, U, T | null>;
 export type ParseResult<T, U> = {
   success: true,
   value: U,
@@ -65,4 +62,3 @@ export function parse<T, U>(parser: Parser<T, U>, input: T): ParseOutput<T, U> {
     };
   }
 }
-
