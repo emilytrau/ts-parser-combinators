@@ -34,17 +34,13 @@ export const list1 = <T, U>(p: Parser<T, U>): Parser<T, U[]> => function*() {
   return [first, ...rest];
 };
 
-export const sepby1 = <T, U, V>(p: Parser<T, U>, s: Parser<T, V>): Parser<T, U[]> => function*() {
-  const elements = yield* list(function*() {
-    const v = yield* p();
-    yield* s();
-    return v;
-  })();
-  const last = yield* p();
-  return [...elements, last];
-}
-
 export const sepby = <T, U, V>(p: Parser<T, U>, s: Parser<T, V>): Parser<T, U[]> => union(sepby1(p, s), identity([]));
+
+export const sepby1 = <T, U, V>(p: Parser<T, U>, s: Parser<T, V>): Parser<T, U[]> => function*() {
+  const first = yield* p();
+  const elements = yield* list(bind(s, () => p))();
+  return [first, ...elements];
+}
 
 export const repeat = <T, U>(times: number, p: Parser<T, U>): Parser<T, U[]> => function*() {
   const results = [];
