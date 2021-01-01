@@ -5,11 +5,11 @@ import {
   unexpectedEof,
 } from '.';
 
-export const unexpectedCharacter = (found: string, expected: string) => fail(`Unexpected character "${found}" encountered, expected ${expected}`);
+export const unexpectedCharacter = (found: string) => fail(`Unexpected character "${found}" encountered`);
 
 export const eof = parser((input: string) => {
   if (input !== '') {
-    throw unexpectedCharacter(input[0], '<EOF>');
+    throw unexpectedCharacter(input[0]);
   }
   return ['', ''];
 })
@@ -21,19 +21,47 @@ export const character = parser((input: string) => {
   return [input[0], input.slice(1)];
 });
 
-export const char = (c: string): Parser<string, string> => function*() {
-  const aCharacter = yield* character();
-  if (aCharacter === c) {
-    return aCharacter;
+export const satisfy = (condition: (i: string) => boolean): Parser<string, string> => function*() {
+  const c = yield* character();
+  if (!condition(c)) {
+    throw unexpectedCharacter(c);
   }
-  throw unexpectedCharacter(aCharacter, `"${c}"`);
+  return c;
+}
+
+export const flatten = (p: Parser<string, string[]>): Parser<string, string> => function*() {
+  let output = '';
+  const strings = yield* p();
+  for (let s of strings) {
+    output += s;
+  }
+  return output;
+}
+
+export const char = (c: string) => satisfy((i) => i === c);
+
+export const oneOf = (options: string) => satisfy((i) => options.indexOf(i) !== -1);
+
+export const concat = (...parsers: Parser<string, string>[]) => function*() {
+  let output = '';
+  for (let p of parsers) {
+    output += yield* p();
+  }
+  return output;
+}
+
+export const string = <T extends string>(s: T): Parser<string, T> => function*() {
+  for (let letter of s) {
+    yield* char(letter)();
+  }
+  return s;
 }
 
 export const digit: Parser<string, number> = function*() {
   const c = yield* character();
   const n = parseInt(c, 10);
   if (isNaN(n)) {
-    throw unexpectedCharacter(c, 'a digit');
+    throw unexpectedCharacter(c);
   }
   return n;
 }
