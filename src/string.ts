@@ -1,5 +1,7 @@
 import {
+  bind,
   fail,
+  identity,
   parser,
   Parser,
   unexpectedEof,
@@ -57,11 +59,4 @@ export const string = <T extends string>(s: T): Parser<string, T> => function*()
   return s;
 }
 
-export const digit: Parser<string, number> = function*() {
-  const c = yield* character();
-  const n = parseInt(c, 10);
-  if (isNaN(n)) {
-    throw unexpectedCharacter(c);
-  }
-  return n;
-}
+export const literal = <U>(s: string, v: U) => bind(string(s), () => identity<string, U>(v));
