@@ -7,11 +7,12 @@ export type ParseResult<T, U> = {
   value: U,
   rest: T,
 };
-export type ParseFail = {
+export type ParseFail<T> = {
   success: false,
   error: ParseError,
+  rest: T,
 }
-export type ParseOutput<T, U> = ParseResult<T, U> | ParseFail;
+export type ParseOutput<T, U> = ParseResult<T, U> | ParseFail<T>;
 
 export class ParseError extends Error {
   constructor(message: string) {
@@ -38,8 +39,8 @@ export function parser<T, U>(p: ParserFunction<T, U>): Parser<T, U> {
 }
 
 export function parse<T, U>(parser: Parser<T, U>, input: T): ParseOutput<T, U> {
+  let remainingInput = input;
   try {
-    let remainingInput = input;
     const p = parser();
     let state = p.next();
     while (!state.done) {
@@ -59,6 +60,7 @@ export function parse<T, U>(parser: Parser<T, U>, input: T): ParseOutput<T, U> {
     return {
       success: false,
       error,
+      rest: remainingInput,
     };
   }
 }
