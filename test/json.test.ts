@@ -8,17 +8,6 @@ type Test<U> = {
 }
 const tests: Test<any>[] = [
   {
-    name: 'parse whitespace',
-    parser: json.parseWs,
-    cases: [
-      { success: true, input: '', out: '' },
-      { success: true, input: ' ', out: ' ' },
-      { success: true, input: '\n', out: '\n' },
-      { success: true, input: '\r', out: '\r' },
-      { success: true, input: '\t', out: '\t' },
-    ]
-  },
-  {
     name: 'parse string',
     parser: json.parseString,
     cases: [
@@ -67,6 +56,7 @@ const tests: Test<any>[] = [
     cases: [
       { success: true, input: '{}', out: {} },
       { success: true, input: '{ "hello": "world" }', out: { hello: 'world' } },
+      { success: true, input: '{ "hello": "world", "one": "two" }', out: { hello: 'world', one: 'two' } },
     ],
   },
   {
