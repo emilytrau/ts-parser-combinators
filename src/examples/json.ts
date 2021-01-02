@@ -19,10 +19,17 @@ import {
   concat,
   eof,
   flatten,
+  literal,
   oneOf,
   satisfy,
-  string,
 } from '../string';
+
+const cQuote = char('"');
+const cLSBracket = char('[');
+const cRSquareBracket = char(']');
+const cLCurlyBracket = char('{');
+const cRCurlyBracket = char('}');
+const cColon = char(':');
 
 type JsonValue = string | number | boolean | { [k: string]: JsonValue } | JsonValue[] | null;
 
@@ -61,10 +68,10 @@ export const parseInteger = union(
   concat(char('-'), parseDigits),
 );
 
-export const parseNumber = function*() {
-  const s = yield* concat(parseInteger, parseFraction, parseExponent)();
-  return parseFloat(s);
-}
+export const parseNumber = bind(
+  concat(parseInteger, parseFraction, parseExponent),
+  (s) => identity(parseFloat(s)),
+);
 
 export const parseHex = union(
   parseDigit,
@@ -85,9 +92,9 @@ export const parseCharacter = union(
 export const parseCharacters = flatten(list(parseCharacter));
 
 export const parseString = function*() {
-  yield* char('"')();
+  yield* cQuote();
   const s = yield* parseCharacters();
-  yield* char('"')();
+  yield* cQuote();
   return s;
 }
 
@@ -101,9 +108,9 @@ export const parseElement = function*() {
 export const parseElements = sepby1(parseElement, char(','));
 
 export const parseArray = function*() {
-  yield* char('[')();
+  yield* cLSBracket();
   const values = yield* union(parseElements, identity([]))();
-  yield* char(']')();
+  yield* cRSquareBracket();
   return values;
 }
 
@@ -111,7 +118,7 @@ export const parseMember = function*() {
   yield* parseWs();
   const key = yield* parseString();
   yield* parseWs();
-  yield* char(':')();
+  yield* cColon();
   const value = yield* parseElement();
   return [key, value] as const;
 }
@@ -119,17 +126,17 @@ export const parseMember = function*() {
 export const parseMembers = sepby1(parseMember, char(','));
 
 export const parseObject = function*() {
-  yield* char('{')();
+  yield* cLCurlyBracket();
   const members = yield* union(parseMembers, identity([]))();
-  yield* char('}')();
+  yield* cRCurlyBracket();
   return Object.fromEntries(members);
 }
 
-export const parseTrue = bind(string('true'), () => identity<string, true>(true));
+export const parseTrue = literal('true', true);
 
-export const parseFalse = bind(string('false'), () => identity<string, false>(false));
+export const parseFalse = literal('false', false);
 
-export const parseNull = bind(string('null'), () => identity<string, null>(null));
+export const parseNull = literal('null', null);
 
 export const parseValue: Parser<string, JsonValue> = union<string, JsonValue>(
   parseObject,
