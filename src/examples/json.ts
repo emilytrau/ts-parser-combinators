@@ -1,3 +1,9 @@
+/**
+ * A JSON parser based on the json.org spec (https://www.crockford.com/mckeeman.html)
+ * It's reasonaly faithful to spec to demonstrate how easy it is to convert a grammar to parser-combinators
+ * This is probably incomplete and should definitely not be used in production
+ */
+
 import {
   bind,
   identity,
@@ -20,83 +26,88 @@ import {
 
 type JsonValue = string | number | boolean | { [k: string]: JsonValue } | JsonValue[] | null;
 
-const parseWs = flatten(list(union(
+export const parseWs = flatten(list(union(
   char('\u0020'),
   char('\u000A'),
   char('\u000D'),
   char('\u0009'),
 )));
 
-const parseSign = union(
+export const parseSign = union(
   char('+'),
   char('-'),
-  identity('')
+  identity(''),
 );
 
-const parseOneNine = satisfy((i) => i >= '1' && i <= '9');
+export const parseOneNine = satisfy((i) => i >= '1' && i <= '9');
 
-const parseDigit = union(char('0'), parseOneNine);
-const parseDigits = flatten(list1(parseDigit));
+export const parseDigit = union(char('0'), parseOneNine);
+export const parseDigits = flatten(list1(parseDigit));
 
-const parseExponent = union(
+export const parseExponent = union(
   concat(oneOf('eE'), parseSign, parseDigits),
   identity(''),
 );
 
-const parseFraction = union(
+export const parseFraction = union(
   concat(char('.'), parseDigits),
   identity(''),
 );
 
-const parseInteger = union(
-  parseDigit,
+export const parseInteger = union(
   concat(parseOneNine, parseDigits),
-  concat(char('-'), parseDigits),
+  parseDigit,
   concat(char('-'), parseOneNine, parseDigits),
+  concat(char('-'), parseDigits),
 );
 
-const parseNumber = function*() {
+export const parseNumber = function*() {
   const s = yield* concat(parseInteger, parseFraction, parseExponent)();
   return parseFloat(s);
 }
 
-const parseHex = union(
+export const parseHex = union(
   parseDigit,
   satisfy((i) => i >= 'a' && i <= 'f'),
   satisfy((i) => i >= 'A' && i <= 'F'),
 );
 
-const parseEscape = union(
+export const parseEscape = union(
   oneOf('"\\/bfnrt'),
   concat(char('u'), flatten(repeat(4, parseHex))),
 );
 
-const parseCharacter = union(
-  satisfy((i) => i !== '*' && i !== '\\' && i >= '\u0020' && i <= '\u{10FFFF}'),
+export const parseCharacter = union(
+  satisfy((i) => i !== '"' && i !== '\\' && i >= '\u0020' && i <= '\u{10FFFF}'),
   concat(char('\\'), parseEscape),
 );
 
-const parseCharacters = flatten(list(parseCharacter));
+export const parseCharacters = flatten(list(parseCharacter));
 
-const parseString = concat(char('"'), parseCharacters, char('"'));
+export const parseString = function*() {
+  yield* char('"')();
+  const s = yield* parseCharacters();
+  yield* char('"')();
+  return s;
+}
 
-const parseElement = function*() {
+export const parseElement = function*() {
   yield* parseWs();
   const value = yield* parseValue();
   yield* parseWs();
   return value;
 }
 
-const parseElements = sepby1(parseElement, char(','));
+export const parseElements = sepby1(parseElement, char(','));
 
-const parseArray = function*() {
+export const parseArray = function*() {
   yield* char('[')();
   const values = yield* union(parseElements, identity([]))();
   yield* char(']')();
   return values;
 }
 
-const parseMember = function*() {
+export const parseMember = function*() {
   yield* parseWs();
   const key = yield* parseString();
   yield* parseWs();
@@ -105,22 +116,22 @@ const parseMember = function*() {
   return [key, value] as const;
 }
 
-const parseMembers = sepby1(parseMember, char(','));
+export const parseMembers = sepby1(parseMember, char(','));
 
-const parseObject = function*() {
+export const parseObject = function*() {
   yield* char('{')();
   const members = yield* union(parseMembers, identity([]))();
   yield* char('}')();
   return Object.fromEntries(members);
 }
 
-const parseTrue = bind(string('true'), () => identity<string, true>(true));
+export const parseTrue = bind(string('true'), () => identity<string, true>(true));
 
-const parseFalse = bind(string('false'), () => identity<string, false>(false));
+export const parseFalse = bind(string('false'), () => identity<string, false>(false));
 
-const parseNull = bind(string('null'), () => identity<string, null>(null));
+export const parseNull = bind(string('null'), () => identity<string, null>(null));
 
-const parseValue: Parser<string, JsonValue> = union<string, JsonValue>(
+export const parseValue: Parser<string, JsonValue> = union<string, JsonValue>(
   parseObject,
   parseArray,
   parseString,
