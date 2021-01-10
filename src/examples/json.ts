@@ -43,7 +43,7 @@ export const parseWs = flatten(list(union(
 export const parseSign = union(
   char('+'),
   char('-'),
-  identity(''),
+  identity<string, string>(''),
 );
 
 export const parseOneNine = satisfy((i) => i >= '1' && i <= '9');
@@ -53,12 +53,12 @@ export const parseDigits = flatten(list1(parseDigit));
 
 export const parseExponent = union(
   concat(oneOf('eE'), parseSign, parseDigits),
-  identity(''),
+  identity<string, string>(''),
 );
 
 export const parseFraction = union(
   concat(char('.'), parseDigits),
-  identity(''),
+  identity<string, string>(''),
 );
 
 export const parseInteger = union(
@@ -109,25 +109,26 @@ export const parseElements = sepby1(parseElement, char(','));
 
 export const parseArray = function*() {
   yield* cLSBracket();
-  const values = yield* union(parseElements, identity([]))();
+  const values = yield* union(parseElements, identity<string, JsonValue[]>([]))();
   yield* cRSquareBracket();
   return values;
 }
 
+type Member = readonly [string, JsonValue];
 export const parseMember = function*() {
   yield* parseWs();
   const key = yield* parseString();
   yield* parseWs();
   yield* cColon();
   const value = yield* parseElement();
-  return [key, value] as const;
+  return [key, value] as Member;
 }
 
 export const parseMembers = sepby1(parseMember, char(','));
 
 export const parseObject = function*() {
   yield* cLCurlyBracket();
-  const members = yield* union(parseMembers, identity([]))();
+  const members = yield* union(parseMembers, identity<string, Member[]>([]))();
   yield* cRCurlyBracket();
   return Object.fromEntries(members);
 }
@@ -138,7 +139,7 @@ export const parseFalse = literal('false', false);
 
 export const parseNull = literal('null', null);
 
-export const parseValue: Parser<string, JsonValue> = union<string, JsonValue>(
+export const parseValue: Parser<string, JsonValue> = union(
   parseObject,
   parseArray,
   parseString,
