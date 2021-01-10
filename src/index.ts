@@ -14,11 +14,7 @@ export type ParseFail<T> = {
 };
 export type ParseOutput<T, U> = ParseResult<T, U> | ParseFail<T>;
 
-export class ParseError extends Error {
-  constructor(message: string) {
-    super(message);
-  }
-}
+export class ParseError extends Error {}
 
 export function assertIsParseError(e: Error): asserts e is ParseError {
   if (!(e instanceof ParseError)) {
