@@ -2,17 +2,15 @@ import { parse, Parser } from '../src';
 import * as json from '../src/examples/json';
 
 type Test<U> = {
-  name: string,
-  parser: Parser<string, U>,
-  cases: { success: boolean, input: string, out: U }[],
-}
+  name: string;
+  parser: Parser<string, U>;
+  cases: { success: boolean; input: string; out: U }[];
+};
 const tests: Test<any>[] = [
   {
     name: 'parse string',
     parser: json.parseString,
-    cases: [
-      { success: true, input: '"hello"', out: 'hello' },
-    ],
+    cases: [{ success: true, input: '"hello"', out: 'hello' }],
   },
   {
     name: 'parse number',
@@ -46,9 +44,7 @@ const tests: Test<any>[] = [
   {
     name: 'parse null',
     parser: json.parseNull,
-    cases: [
-      { success: true, input: 'null', out: null },
-    ],
+    cases: [{ success: true, input: 'null', out: null }],
   },
   {
     name: 'parse object',
@@ -56,7 +52,11 @@ const tests: Test<any>[] = [
     cases: [
       { success: true, input: '{}', out: {} },
       { success: true, input: '{ "hello": "world" }', out: { hello: 'world' } },
-      { success: true, input: '{ "hello": "world", "one": "two" }', out: { hello: 'world', one: 'two' } },
+      {
+        success: true,
+        input: '{ "hello": "world", "one": "two" }',
+        out: { hello: 'world', one: 'two' },
+      },
     ],
   },
   {
@@ -68,7 +68,7 @@ const tests: Test<any>[] = [
       { success: true, input: '[1, 2]', out: [1, 2] },
     ],
   },
-]
+];
 
 tests.forEach(({ name, parser, cases }) => {
   test(name, () => {
@@ -85,4 +85,4 @@ tests.forEach(({ name, parser, cases }) => {
       }
     });
   });
-})
+});
