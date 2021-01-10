@@ -3,15 +3,15 @@ export * from './parsers';
 export type ParserFunction<T, U> = (input: T) => [U, T];
 export type Parser<T, U> = () => Generator<T | null, U, T | null>;
 export type ParseResult<T, U> = {
-  success: true,
-  value: U,
-  rest: T,
+  success: true;
+  value: U;
+  rest: T;
 };
 export type ParseFail<T> = {
-  success: false,
-  error: ParseError,
-  rest: T,
-}
+  success: false;
+  error: ParseError;
+  rest: T;
+};
 export type ParseOutput<T, U> = ParseResult<T, U> | ParseFail<T>;
 
 export class ParseError extends Error {
@@ -35,7 +35,7 @@ export function parser<T, U>(p: ParserFunction<T, U>): Parser<T, U> {
     const [result, rest] = p(input!);
     yield rest;
     return result;
-  }
+  };
 }
 
 export function parse<T, U>(parser: Parser<T, U>, input: T): ParseOutput<T, U> {
